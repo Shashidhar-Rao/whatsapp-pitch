@@ -4,284 +4,472 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>WhatsApp: The Execution Layer</title>
+    
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://unpkg.com/lucide@latest"></script>
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        wa: {
-                            dark: '#075E54',
-                            primary: '#128C7E',
-                            light: '#25D366',
-                            bg: '#ECE5DD',
-                            bubble: '#DCF8C6'
-                        }
-                    }
-                }
-            }
+    
+    <!-- Babel for compiling JSX in the browser -->
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    
+    <!-- Import Map for React and Lucide Icons -->
+    <script type="importmap">
+      {
+        "imports": {
+          "react": "https://esm.sh/react@18.2.0",
+          "react-dom/client": "https://esm.sh/react-dom@18.2.0/client",
+          "lucide-react": "https://esm.sh/lucide-react@0.294.0"
         }
+      }
     </script>
-    <style>
-        .tab-content { display: none; }
-        .tab-content.active { display: block; }
-        .tab-btn.active { 
-            color: #075E54; 
-            border-bottom-width: 4px; 
-            border-color: #25D366; 
-            background-color: white; 
-        }
-        .phone-mockup {
-            background-image: url('https://www.transparenttextures.com/patterns/cubes.png');
-        }
-    </style>
 </head>
-<body class="bg-gray-50 min-h-screen font-sans text-gray-800">
+<body class="bg-gray-100 min-h-screen font-sans">
+    <div id="root"></div>
 
-    <!-- Header -->
-    <header class="bg-wa-dark text-white p-6 shadow-md">
-        <div class="max-w-6xl mx-auto flex items-center gap-4">
-            <i data-lucide="message-circle" class="w-8 h-8 text-wa-light"></i>
-            <div>
-                <h1 class="text-2xl font-bold">WhatsApp: The Execution Layer</h1>
-                <p class="text-sm text-wa-light">A Builder-Operator Proposal for Kunal Shah</p>
+    <!-- The actual React App (data-type="module" allows imports) -->
+    <script type="text/babel" data-type="module">
+        import React, { useState } from 'react';
+        import { createRoot } from 'react-dom/client';
+        import { MessageCircle, Wallet, Briefcase, TrendingUp, Check, CheckCheck, Camera, Paperclip, Mic, MoreVertical, ArrowLeft, FileText, Lightbulb, AlertTriangle, XOctagon, Layers, ArrowRight, Heart, MessageSquare } from 'lucide-react';
+
+        const WAPitch = () => {
+          const [activeTab, setActiveTab] = useState(0);
+
+          const tabs = [
+            { id: 0, title: "Summary", icon: <FileText size={18} />, label: "Vision" },
+            { id: 1, title: "Marketplace", icon: <MessageCircle size={18} />, label: "Services" },
+            { id: 2, title: "Utility", icon: <Wallet size={18} />, label: "Context" },
+            { id: 3, title: "Network", icon: <Briefcase size={18} />, label: "Circles" },
+            { id: 4, title: "Ecosystem", icon: <TrendingUp size={18} />, label: "ROI" },
+          ];
+
+          return (
+            <div className="max-w-6xl mx-auto p-4 md:p-6 bg-gray-50 min-h-screen text-gray-800 flex flex-col font-sans">
+              
+              {/* Header */}
+              <div className="mb-8">
+                <h1 className="text-3xl md:text-4xl font-extrabold text-[#075E54] tracking-tight">WhatsApp: The Execution Layer</h1>
+                <p className="text-gray-500 mt-2 text-lg font-medium">A Builder-Operator Proposal</p>
+              </div>
+
+              {/* Navigation Tabs */}
+              <div className="flex bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden mb-6 flex-wrap">
+                {tabs.map((tab) => (
+                  <button
+                    key={tab.id}
+                    onClick={() => setActiveTab(tab.id)}
+                    className={`flex-1 py-4 px-2 text-center text-sm font-bold uppercase tracking-wide transition-all duration-200 flex flex-col items-center gap-1 min-w-[80px]
+                      ${activeTab === tab.id 
+                        ? 'text-[#075E54] border-b-4 border-[#25D366] bg-green-50' 
+                        : 'text-gray-400 hover:bg-gray-50 border-b-4 border-transparent'
+                      }`}
+                  >
+                    {tab.icon}
+                    <span className="hidden md:block">{tab.title}</span>
+                    <span className="md:hidden text-xs">{tab.label}</span>
+                  </button>
+                ))}
+              </div>
+
+              {/* Tab Content Area */}
+              <div className="flex-grow">
+                {activeTab === 0 && <SummaryTab />}
+                {activeTab === 1 && <MarketplaceTab />}
+                {activeTab === 2 && <UtilityTab />}
+                {activeTab === 3 && <NetworkTab />}
+                {activeTab === 4 && <EcosystemTab />}
+              </div>
             </div>
-        </div>
-    </header>
+          );
+        };
 
-    <!-- Navigation Tabs -->
-    <div class="bg-wa-primary shadow-sm sticky top-0 z-50">
-        <div class="max-w-6xl mx-auto flex overflow-x-auto">
-            <button onclick="switchTab('summary')" id="tab-summary" class="tab-btn active flex-1 py-4 px-2 text-center text-sm font-bold uppercase tracking-wide transition-all text-white/80 hover:text-white border-b-4 border-transparent flex flex-col items-center gap-1 min-w-[120px]">
-                <i data-lucide="layout-dashboard" class="w-5 h-5"></i> Vision
-            </button>
-            <button onclick="switchTab('marketplace')" id="tab-marketplace" class="tab-btn flex-1 py-4 px-2 text-center text-sm font-bold uppercase tracking-wide transition-all text-white/80 hover:text-white border-b-4 border-transparent flex flex-col items-center gap-1 min-w-[120px]">
-                <i data-lucide="briefcase" class="w-5 h-5"></i> Marketplace
-            </button>
-            <button onclick="switchTab('utility')" id="tab-utility" class="tab-btn flex-1 py-4 px-2 text-center text-sm font-bold uppercase tracking-wide transition-all text-white/80 hover:text-white border-b-4 border-transparent flex flex-col items-center gap-1 min-w-[120px]">
-                <i data-lucide="wallet" class="w-5 h-5"></i> Utility
-            </button>
-            <button onclick="switchTab('network')" id="tab-network" class="tab-btn flex-1 py-4 px-2 text-center text-sm font-bold uppercase tracking-wide transition-all text-white/80 hover:text-white border-b-4 border-transparent flex flex-col items-center gap-1 min-w-[120px]">
-                <i data-lucide="users" class="w-5 h-5"></i> Network
-            </button>
-            <button onclick="switchTab('ecosystem')" id="tab-ecosystem" class="tab-btn flex-1 py-4 px-2 text-center text-sm font-bold uppercase tracking-wide transition-all text-white/80 hover:text-white border-b-4 border-transparent flex flex-col items-center gap-1 min-w-[120px]">
-                <i data-lucide="trending-up" class="w-5 h-5"></i> Ecosystem
-            </button>
-        </div>
-    </div>
+        // --- Reusable Components ---
+        const InfoBlock = ({ title, icon, content, type = 'default' }) => {
+          const styles = {
+            default: "bg-white border-gray-200 text-gray-800",
+            insight: "bg-[#E1F5E8] border-[#25D366]/30 text-[#075E54]",
+            tradeoff: "bg-orange-50 border-orange-200 text-orange-900",
+            dont: "bg-red-50 border-red-200 text-red-900"
+          };
+          
+          const iconColors = {
+            default: "text-[#128C7E]", insight: "text-[#128C7E]", tradeoff: "text-orange-600", dont: "text-red-600"
+          };
 
-    <!-- Main Content Area -->
-    <main class="max-w-6xl mx-auto p-6 mt-4">
+          return (
+            <div className={`p-5 rounded-xl border ${styles[type]} shadow-sm`}>
+              <div className="flex items-center gap-2 mb-2">
+                <span className={iconColors[type]}>{icon}</span>
+                <h3 className="font-bold text-lg">{title}</h3>
+              </div>
+              <div className="text-sm leading-relaxed opacity-90">{content}</div>
+            </div>
+          );
+        };
 
-        <!-- 1. Executive Summary -->
-        <div id="content-summary" class="tab-content active">
-            <h2 class="text-3xl font-bold text-wa-dark mb-6 border-b pb-2">Executive Summary</h2>
-            <div class="bg-white p-6 rounded-lg shadow-sm border border-gray-200 mb-6 text-lg leading-relaxed">
-                <p class="mb-4">You shared a clear vision for WhatsApp yesterday in your tweet. WhatsApp is already a shared language for three billion people. However, communication is currently separated from execution. Users talk about tasks but must leave the application to complete them.</p>
-                <p class="mb-4">I mapped out ways to embed context directly into conversations without adding visual clutter. This proposal outlines a strict product strategy to turn chat into an execution layer. We focus on low-risk services, maintaining the minimalist UI, and protecting the privacy moat.</p>
-                <p>The architecture allows Meta to directly attack the lucrative B2B advertising monopoly and build a high-margin token economy. It achieves this while keeping the chat inbox completely ad-free and operationally lightweight.</p>
+        const MobileWireframe = ({ children, headerTitle, withInput = true, bgColor = "bg-[#ECE5DD]" }) => (
+          <div className={`w-[280px] h-[500px] border-[6px] border-gray-900 rounded-[2.5rem] overflow-hidden flex flex-col relative shadow-xl shrink-0 mx-auto ${bgColor}`}>
+            <div className="bg-[#075E54] text-white p-4 pt-8 flex items-center gap-3 shrink-0 shadow-md z-10">
+              <ArrowLeft size={20} />
+              <div className="w-8 h-8 rounded-full bg-gray-300 flex items-center justify-center overflow-hidden">
+                <span className="text-gray-600 text-xs font-bold">AI</span>
+              </div>
+              <div className="font-bold flex-1 truncate">{headerTitle}</div>
+              <MoreVertical size={20} />
             </div>
             
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div class="bg-blue-50 p-5 rounded-lg border border-blue-200">
-                    <h3 class="font-bold text-blue-900 flex items-center gap-2 mb-2"><i data-lucide="lightbulb" class="w-5 h-5"></i> Product Core</h3>
-                    <ul class="list-disc pl-5 text-blue-800 space-y-1">
-                        <li>AI-driven Intent Capture via Voice/Text</li>
-                        <li>Token-based B2B Lead Generation</li>
-                        <li>Live Shared Applets (Split Bills, Checklists)</li>
-                    </ul>
-                </div>
-                <div class="bg-red-50 p-5 rounded-lg border border-red-200">
-                    <h3 class="font-bold text-red-900 flex items-center gap-2 mb-2"><i data-lucide="x-octagon" class="w-5 h-5"></i> The Hard "NOs"</h3>
-                    <ul class="list-disc pl-5 text-red-800 space-y-1">
-                        <li>No WeChat-style "Discover" tabs</li>
-                        <li>No human-arbitrated fulfillment or dispute resolution</li>
-                        <li>No in-thread advertising or cloud-processed intimacy</li>
-                    </ul>
-                </div>
+            <div className="flex-1 p-3 overflow-y-auto flex flex-col gap-3 scrollbar-hide text-sm">
+              {children}
             </div>
-        </div>
 
-        <!-- 2. Marketplace -->
-        <div id="content-marketplace" class="tab-content">
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                <div>
-                    <h2 class="text-3xl font-bold text-wa-dark mb-4 border-b pb-2">Services Marketplace</h2>
-                    <div class="space-y-4 mb-6">
-                        <div class="bg-white p-5 rounded-lg shadow-sm border-l-4 border-wa-primary">
-                            <h3 class="font-bold text-gray-900 flex items-center gap-2 mb-2">The Product</h3>
-                            <p class="text-gray-700">A conversational search engine powered by Meta AI. Users do not browse a directory. They speak their intent ("I need a CA in Bengaluru"). The AI structures a job brief and broadcasts it to verified professionals.</p>
-                        </div>
-                        <div class="bg-gray-50 p-5 rounded-lg border">
-                            <h3 class="font-bold text-gray-900 flex items-center gap-2 mb-2">Customer Insight</h3>
-                            <p class="text-gray-700">Currently, finding B2B services on WhatsApp lacks interoperability. A blank search bar causes cognitive dissonance. Asking an AI feels like texting a concierge.</p>
-                        </div>
-                        <div class="bg-orange-50 p-5 rounded-lg border border-orange-200">
-                            <h3 class="font-bold text-orange-900 flex items-center gap-2 mb-2">The Tradeoff (Tokens)</h3>
-                            <p class="text-orange-800">To prevent off-platform cash leakage, WhatsApp charges the business a token *to quote*, not a commission on the final job. This protects margins but requires businesses to pre-purchase credits.</p>
-                        </div>
-                    </div>
+            {withInput && (
+              <div className="bg-[#f0f2f5] p-2 flex items-center gap-2 shrink-0">
+                <div className="bg-white rounded-full flex-1 flex items-center px-4 py-2 shadow-sm gap-2">
+                  <div className="text-gray-400"><Heart size={18} /></div>
+                  <div className="text-gray-400 flex-1 text-sm">Message</div>
+                  <div className="text-gray-400"><Paperclip size={18} /></div>
+                  <div className="text-gray-400"><Camera size={18} /></div>
                 </div>
+                <div className="bg-[#128C7E] w-10 h-10 rounded-full flex items-center justify-center text-white shadow-sm shrink-0">
+                  <Mic size={20} />
+                </div>
+              </div>
+            )}
+          </div>
+        );
+
+        // --- Tabs ---
+        const SummaryTab = () => (
+          <div className="space-y-8 animate-in fade-in duration-500">
+            <div className="bg-white p-8 rounded-2xl shadow-sm border border-gray-100">
+              <h2 className="text-2xl font-bold text-[#075E54] mb-4">Executive Summary</h2>
+              
+              <div className="prose max-w-none text-gray-700 space-y-4 text-lg leading-relaxed">
+                <p>
+                  You shared a clear vision for WhatsApp yesterday. The product is already a shared language for three billion people. However, communication is currently separated from execution. Users talk about tasks, but they must leave the application to complete them.
+                </p>
+                <p>
+                  I spent the morning brainstorming how to bridge this gap. This proposal outlines a strict product strategy to turn WhatsApp into a Conversational Execution Layer. The goal is simple: embed context directly into conversations without adding visual clutter.
+                </p>
+                <p>
+                  This architecture is designed around a core philosophy. The user's inbox remains completely free of ads and dense menus. Instead, utility is summoned naturally through chat. We monetize intent and business curation, not the personal messaging experience.
+                </p>
+              </div>
+            </div>
+
+            <div className="grid md:grid-cols-3 gap-6">
+               <InfoBlock 
+                title="Conversational Intent" 
+                icon={<MessageSquare />} 
+                content="Replace universal search bars with AI concierges. Capture high-value intent through natural text and voice notes."
+              />
+              <InfoBlock 
+                title="Contextual Utility" 
+                icon={<Layers />} 
+                content="Deploy Live Shared Applets. Keep group expenses and checklists strictly inside the chat timeline using on-device ML."
+              />
+               <InfoBlock 
+                title="B2B Value Exchange" 
+                icon={<Briefcase />} 
+                content="Launch the Professional Card. Monetize B2B introductions and target high-ticket ads outside the chat UI."
+              />
+            </div>
+          </div>
+        );
+
+        const MarketplaceTab = () => (
+          <div className="space-y-6 animate-in fade-in duration-500">
+            <div className="bg-white p-6 rounded-2xl shadow-sm mb-6 flex flex-col md:flex-row gap-8">
+              
+              <div className="md:w-1/2 space-y-4">
+                <h2 className="text-xl font-bold text-gray-800 border-b pb-2">Conversational Services Marketplace</h2>
+                <p className="text-gray-600 mb-6">
+                  Users don't want a "Yellow Pages" directory inside WhatsApp. They want to ask for help naturally. 
+                  By utilizing the AI bar as the primary search entry point, we capture high-intent queries (even via vernacular voice notes) and route them anonymously to verified professionals who pay a token to submit a quote.
+                </p>
                 
-                <!-- Mockup Grid -->
-                <div class="flex flex-col items-center gap-4">
-                    <div class="flex gap-4 w-full justify-center">
-                        <!-- Screen 1 -->
-                        <div class="w-48 h-96 bg-wa-bg rounded-[2rem] border-8 border-gray-800 shadow-xl overflow-hidden relative phone-mockup">
-                            <div class="bg-wa-dark text-white p-3 text-center text-xs font-bold">Meta AI</div>
-                            <div class="p-3 flex flex-col gap-2">
-                                <div class="bg-wa-bubble self-end p-2 rounded-lg rounded-tr-none text-xs shadow-sm max-w-[85%]">
-                                    I need a startup CA in Bengaluru to file GST.
-                                </div>
-                                <div class="bg-white self-start p-2 rounded-lg rounded-tl-none text-xs shadow-sm max-w-[90%] border-l-2 border-wa-primary">
-                                    <div class="font-bold mb-1">Found 3 Verified CAs:</div>
-                                    <div class="flex items-center gap-2 mb-1 bg-gray-50 p-1 rounded">
-                                        <div class="w-6 h-6 bg-blue-100 rounded-full flex items-center justify-center"><i data-lucide="check" class="w-3 h-3 text-blue-600"></i></div>
-                                        <span class="font-bold">John Doe</span>
-                                    </div>
-                                    <button class="w-full bg-wa-light text-white font-bold py-1 mt-1 rounded">Request Quote</button>
-                                </div>
-                            </div>
+                <InfoBlock 
+                  type="insight"
+                  title="Customer Insight" 
+                  icon={<Lightbulb />} 
+                  content="People trust WhatsApp for communication, not web browsing. A user is far more likely to send a photo of a broken pipe to the Meta AI and ask for an electrician than navigate a dense category menu." 
+                />
+                
+                <InfoBlock 
+                  type="tradeoff"
+                  title="Tradeoff: The Token Economy" 
+                  icon={<AlertTriangle />} 
+                  content="We monetize the lead (charging the professional a token to quote) rather than taking a 5% cut of the final transaction. We lose total GMV capture, but we completely avoid the operations nightmare of refund disputes and off-platform cash payments." 
+                />
+                
+                <InfoBlock 
+                  type="dont"
+                  title="Strict Guardrail" 
+                  icon={<XOctagon />} 
+                  content="DO NOT build a WeChat-style 'Discover' tab. DO NOT arbitrate service disputes. WhatsApp is the execution bridge, not the fulfillment center." 
+                />
+              </div>
+
+              <div className="md:w-1/2 relative bg-gray-100 rounded-xl p-4 overflow-hidden border border-gray-200">
+                <div className="flex flex-col gap-6 items-center">
+                  
+                  {/* Top row of wireframes */}
+                  <div className="flex gap-6 justify-center w-full scale-90 origin-top">
+                    {/* Screen 1: The Request */}
+                    <MobileWireframe headerTitle="Meta AI Concierge">
+                      <div className="bg-[#DCF8C6] p-2 rounded-lg rounded-tr-none self-end max-w-[85%] shadow-sm relative">
+                        <img src="https://images.unsplash.com/photo-1584622650111-993a426fbf0a?w=400&q=80" alt="pipe" className="w-full rounded mb-1 object-cover h-24" />
+                        <span className="text-gray-800">My kitchen pipe burst, need someone to fix it today.</span>
+                        <div className="text-[10px] text-gray-500 text-right mt-1">10:41 AM <CheckCheck size={12} className="inline text-blue-500"/></div>
+                      </div>
+                      
+                      <div className="bg-white p-2 rounded-lg rounded-tl-none self-start max-w-[90%] shadow-sm">
+                        <span className="text-gray-800 font-medium block mb-1">I found 3 plumbers nearby available today.</span>
+                        <div className="border border-gray-200 rounded p-2 mb-2 bg-gray-50">
+                          <div className="font-bold">John Doe Plumbing</div>
+                          <div className="text-xs text-green-600 flex items-center gap-1"><Check size={12}/> Verified Pro</div>
+                          <div className="text-xs mt-1">Quote: ₹850</div>
+                          <button className="w-full bg-[#128C7E] text-white text-xs py-1.5 rounded mt-2 font-bold">Accept & Book</button>
                         </div>
+                        <div className="text-[10px] text-gray-500 text-right">10:42 AM</div>
+                      </div>
+                    </MobileWireframe>
+
+                    {/* Screen 2: The B2B View */}
+                    <MobileWireframe headerTitle="WA Pro Leads" bgColor="bg-slate-800">
+                      <div className="bg-slate-700 p-3 rounded-lg shadow-sm border border-slate-600">
+                        <div className="text-white text-xs font-bold uppercase tracking-wider mb-2 flex justify-between">
+                          <span>New Local Job</span>
+                          <span className="bg-green-500/20 text-green-400 px-2 rounded">Plumbing</span>
+                        </div>
+                        <img src="https://images.unsplash.com/photo-1584622650111-993a426fbf0a?w=400&q=80" alt="pipe" className="w-full rounded mb-2 object-cover h-20 opacity-80" />
+                        <div className="text-slate-300 text-sm mb-3">"My kitchen pipe burst, need someone to fix it today."</div>
+                        <div className="text-xs text-slate-400 mb-3">📍 2.4 km away</div>
                         
-                        <!-- Screen 2 -->
-                        <div class="w-48 h-96 bg-wa-bg rounded-[2rem] border-8 border-gray-800 shadow-xl overflow-hidden relative phone-mockup">
-                            <div class="bg-wa-dark text-white p-3 text-center text-xs font-bold">WhatsApp Pro Leads</div>
-                            <div class="p-3 flex flex-col gap-2">
-                                <div class="bg-white p-2 rounded-lg shadow-sm text-xs">
-                                    <div class="font-bold text-wa-primary mb-1">New Job Brief</div>
-                                    <div>Category: Taxation</div>
-                                    <div>Location: Bengaluru</div>
-                                    <button class="w-full bg-gray-800 text-white font-bold py-1 mt-2 rounded flex justify-center items-center gap-1">
-                                        <i data-lucide="coins" class="w-3 h-3"></i> Spend 1 Token to Quote
-                                    </button>
-                                </div>
-                            </div>
+                        <div className="flex gap-2">
+                          <button className="flex-1 bg-slate-600 text-white text-xs py-2 rounded font-bold">Pass</button>
+                          <button className="flex-1 bg-green-500 text-white text-xs py-2 rounded font-bold">Quote (1 Token)</button>
                         </div>
-                    </div>
-                </div>
-            </div>
-        </div>
+                      </div>
+                    </MobileWireframe>
+                  </div>
 
-        <!-- 3. Contextual Utility -->
-        <div id="content-utility" class="tab-content">
-            <h2 class="text-3xl font-bold text-wa-dark mb-4 border-b pb-2">Contextual Utility</h2>
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
-                <div class="bg-white p-5 rounded-lg shadow-sm border border-gray-200">
-                    <h3 class="font-bold text-gray-900 mb-2">The Product</h3>
-                    <p class="text-sm text-gray-600">"Live Shared Applets." Users tap a magic icon on receipts to instantly parse data (via on-device OCR) into interactive split-bill widgets natively embedded in the chat.</p>
                 </div>
-                <div class="bg-white p-5 rounded-lg shadow-sm border border-gray-200">
-                    <h3 class="font-bold text-gray-900 mb-2">Customer Insight</h3>
-                    <p class="text-sm text-gray-600">Aggressive auto-invoicing ruins social vibes. Users need a "Draft Mode" to edit splits privately before publishing them to the group.</p>
-                </div>
-                <div class="bg-white p-5 rounded-lg shadow-sm border border-gray-200">
-                    <h3 class="font-bold text-gray-900 mb-2">The Flywheel</h3>
-                    <p class="text-sm text-gray-600">Contextual expense sharing is the ultimate Trojan Horse for WhatsApp Pay, reducing settlement friction to zero.</p>
-                </div>
+              </div>
             </div>
-            <!-- Mockup -->
-            <div class="flex justify-center">
-                <div class="w-72 bg-wa-bg rounded-[2rem] border-8 border-gray-800 shadow-xl overflow-hidden relative phone-mockup">
-                    <div class="bg-wa-dark text-white p-3 flex items-center gap-2 font-bold">
-                        <i data-lucide="arrow-left" class="w-4 h-4"></i> Coorg Trip Group
-                    </div>
-                    <div class="p-4 flex flex-col gap-3">
-                        <div class="bg-white rounded-lg shadow text-sm overflow-hidden border border-gray-200">
-                            <div class="bg-wa-primary text-white p-2 font-bold flex justify-between">
-                                <span>Dinner Bill</span>
-                                <span>₹2,400</span>
-                            </div>
-                            <div class="p-2 space-y-2">
-                                <div class="flex justify-between items-center border-b pb-1">
-                                    <span>Alex (Paid)</span>
-                                    <span class="text-gray-400 line-through">₹800</span>
-                                </div>
-                                <div class="flex justify-between items-center text-red-600 font-bold">
-                                    <span>You Owe</span>
-                                    <span>₹800</span>
-                                </div>
-                                <button class="w-full bg-wa-light text-white font-bold py-2 mt-2 rounded">Settle via WA Pay</button>
-                            </div>
+          </div>
+        );
+
+        const UtilityTab = () => (
+          <div className="space-y-6 animate-in fade-in duration-500">
+            <div className="bg-white p-6 rounded-2xl shadow-sm flex flex-col md:flex-row gap-8">
+              
+              <div className="md:w-1/2 relative bg-gray-100 rounded-xl p-4 overflow-hidden border border-gray-200 flex justify-center items-center">
+                 <MobileWireframe headerTitle="Coorg Trip Group">
+                    <div className="bg-white p-3 rounded-lg rounded-tl-none self-start w-[95%] shadow-sm border border-gray-200">
+                      <div className="text-[#075E54] text-xs font-bold mb-1">Alex</div>
+                      <div className="font-bold text-gray-800 border-b pb-2 mb-2 flex justify-between items-center">
+                        <span>Weekend Dinner Split</span>
+                        <span className="bg-[#E1F5E8] text-[#075E54] text-xs px-2 py-1 rounded">Live</span>
+                      </div>
+                      
+                      <div className="space-y-2 text-sm">
+                        <div className="flex justify-between items-center">
+                          <span className="text-gray-600 line-through">John Doe</span>
+                          <span className="text-gray-400 text-xs">Paid</span>
                         </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- 4. Professional Network -->
-        <div id="content-network" class="tab-content">
-            <h2 class="text-3xl font-bold text-wa-dark mb-4 border-b pb-2">Agentic Networking</h2>
-            <p class="mb-6 text-gray-700">Connecting Meta's public social graph (Threads) to private WhatsApp execution via a native, opt-in Professional Card.</p>
-            <div class="bg-white rounded-lg p-6 shadow-sm border mb-6 flex flex-col md:flex-row gap-6 items-center">
-                <div class="flex-1 space-y-4">
-                    <h3 class="font-bold text-xl text-gray-900">The Contextual Trigger</h3>
-                    <p class="text-gray-600">Instead of a cold settings menu, the AI drops a private, ephemeral message into dormant professional chats offering to silently monitor Threads for relevant icebreakers based on specific chosen tags.</p>
-                    <div class="bg-red-50 p-4 border border-red-200 rounded">
-                        <span class="font-bold text-red-900">Don't:</span> Blanket tracking. Provide a "Glass Box" UI where users toggle exactly which connections the AI is allowed to monitor.
-                    </div>
-                </div>
-                <div class="w-64 bg-wa-bg rounded-[2rem] border-8 border-gray-800 shadow-xl overflow-hidden relative phone-mockup">
-                    <div class="bg-wa-dark text-white p-3 text-sm font-bold">Dormant Chat: John</div>
-                    <div class="p-3">
-                        <div class="bg-white p-2 rounded-lg rounded-tl-none text-xs shadow-sm border-l-2 border-purple-500 mb-2">
-                            <span class="text-purple-600 font-bold flex items-center gap-1"><i data-lucide="sparkles" class="w-3 h-3"></i> AI Concierge</span><br>
-                            John just posted about needing a GTM Manager on Threads. Want me to draft an intro?
-                            <button class="w-full bg-gray-100 text-gray-800 font-bold py-1 mt-2 rounded border border-gray-300">Draft Message</button>
+                        <div className="flex justify-between items-center font-medium">
+                          <span className="text-gray-800">You</span>
+                          <span className="text-gray-800">₹850</span>
                         </div>
+                        <div className="flex justify-between items-center">
+                          <span className="text-gray-600">Sarah</span>
+                          <span className="text-orange-500 text-xs">Owes ₹1,200</span>
+                        </div>
+                      </div>
+                      
+                      <div className="w-full bg-gray-200 h-1.5 rounded-full mt-3 overflow-hidden">
+                        <div className="bg-[#25D366] w-1/3 h-full"></div>
+                      </div>
+                      
+                      <button className="w-full bg-[#128C7E] text-white text-xs py-2 rounded mt-3 font-bold flex justify-center items-center gap-1">
+                        Settle ₹850 via WA Pay
+                      </button>
                     </div>
-                </div>
-            </div>
-        </div>
+                 </MobileWireframe>
+              </div>
 
-        <!-- 5. Ecosystem & ROI -->
-        <div id="content-ecosystem" class="tab-content">
-            <h2 class="text-3xl font-bold text-wa-dark mb-4 border-b pb-2">The Ecosystem Unlock (B2B Ads)</h2>
-            <div class="grid md:grid-cols-2 gap-8 items-center">
-                <div>
-                    <p class="text-gray-700 mb-4 text-lg">The ultimate commercial value is not just inside WhatsApp—it is the data bridge it builds for the rest of Meta.</p>
-                    <div class="bg-white p-5 rounded-lg shadow-sm border border-gray-200 space-y-3">
-                        <h3 class="font-bold text-xl text-wa-primary">Disrupting LinkedIn</h3>
-                        <p class="text-gray-600">The Professional Card generates pristine zero-party B2B data (Role, Industry, Intent). With explicit opt-in, this data feeds Meta's ad algorithm, allowing highly targeted B2B SaaS and Real Estate ads on Instagram.</p>
-                        <p class="text-gray-600 font-bold mt-2">The Result: A massive ROI funnel without a single ad in the WhatsApp chat UI.</p>
-                    </div>
-                </div>
+              <div className="md:w-1/2 space-y-4">
+                <h2 className="text-xl font-bold text-gray-800 border-b pb-2">Contextual Utility (Applets)</h2>
+                <p className="text-gray-600 mb-6">
+                  Adding utility to chat usually causes visual bloat. We solve this by introducing "Live Shared Applets". 
+                  When a receipt is shared, strictly on-device ML parses it and creates a single, updating UI card rather than sending 15 new text messages for every debt update.
+                </p>
                 
-                <!-- Diagram -->
-                <div class="bg-gray-100 p-6 rounded-xl border-2 border-dashed border-gray-300 flex flex-col gap-4 relative">
-                    <div class="bg-white p-3 rounded shadow text-center border-l-4 border-green-500 font-bold">
-                        WhatsApp Pro Card<br><span class="text-xs text-gray-500 font-normal">User Tags: "Director of IT"</span>
-                    </div>
-                    <div class="flex justify-center text-gray-400"><i data-lucide="arrow-down" class="w-6 h-6"></i></div>
-                    <div class="bg-white p-3 rounded shadow text-center border-l-4 border-blue-500 font-bold">
-                        Meta Ad Graph<br><span class="text-xs text-gray-500 font-normal">Cross-Reference Identity</span>
-                    </div>
-                    <div class="flex justify-center text-gray-400"><i data-lucide="arrow-down" class="w-6 h-6"></i></div>
-                    <div class="bg-gradient-to-r from-purple-500 to-pink-500 p-3 rounded shadow text-center text-white font-bold">
-                        Instagram Feed<br><span class="text-xs text-white/80 font-normal">Displays B2B SaaS Ad to Target</span>
-                    </div>
-                </div>
+                <InfoBlock 
+                  type="insight"
+                  title="Customer Insight" 
+                  icon={<Lightbulb />} 
+                  content="Splitting bills is mathematically simple but socially complex. Aggressive auto-invoicing ruins the group vibe. Applets act as a passive 'Shared Canvas' that users interact with on their own terms." 
+                />
+                
+                <InfoBlock 
+                  type="tradeoff"
+                  title="The Trojan Horse" 
+                  icon={<AlertTriangle />} 
+                  content="Contextual expense sharing is the ultimate wedge for WhatsApp Pay. By placing the settlement button natively inside the social coordination widget, we bypass GPay and PhonePe." 
+                />
+                
+                <InfoBlock 
+                  type="dont"
+                  title="Strict Guardrail" 
+                  icon={<XOctagon />} 
+                  content="DO NOT send image data to Meta cloud servers for processing. All OCR and visual intelligence must run strictly on the device's Neural Engine to protect consumer privacy." 
+                />
+              </div>
+
             </div>
-        </div>
-    </main>
+          </div>
+        );
 
-    <script>
-        // Initialize Icons
-        lucide.createIcons();
+        const NetworkTab = () => (
+          <div className="space-y-6 animate-in fade-in duration-500">
+             <div className="bg-white p-6 rounded-2xl shadow-sm flex flex-col md:flex-row gap-8">
+              
+              <div className="md:w-1/2 space-y-4">
+                <h2 className="text-xl font-bold text-gray-800 border-b pb-2">The Professional Work Card</h2>
+                <p className="text-gray-600 mb-6">
+                  To monetize professional networking without scraping private data, we introduce the zero-party Professional Work Card. Users explicitly opt-in to link their job title and industry, allowing the AI Concierge to silently monitor Threads for career updates from their trusted Circle.
+                </p>
+                
+                <InfoBlock 
+                  type="insight"
+                  title="Customer Insight" 
+                  icon={<Lightbulb />} 
+                  content="Professionals lose valuable contacts because maintaining relationships takes too much work. The AI solves this by dropping a private, ephemeral nudge into an empty chat when a relevant event occurs." 
+                />
+                
+                <InfoBlock 
+                  type="tradeoff"
+                  title="Monetizing Trust" 
+                  icon={<AlertTriangle />} 
+                  content="We don't charge for the AI nudges. We charge professionals a monthly subscription for the 'Verified Badge' to ensure their outreach carries weight. Free networking drives liquidity; verified identity drives revenue." 
+                />
+                
+                <InfoBlock 
+                  type="dont"
+                  title="Strict Guardrail" 
+                  icon={<XOctagon />} 
+                  content="DO NOT scrape personal health data or arbitrary chats for networking nudges. Only utilize explicitly authorized public Threads broadcasts and verified Work Card data." 
+                />
+              </div>
 
-        // Tab Switching Logic
-        function switchTab(tabId) {
-            // Hide all contents
-            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
-            // Remove active state from all buttons
-            document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
-            
-            // Show selected content
-            document.getElementById('content-' + tabId).classList.add('active');
-            // Set active state on button
-            document.getElementById('tab-' + tabId).classList.add('active');
-        }
+              <div className="md:w-1/2 relative bg-gray-100 rounded-xl p-4 overflow-hidden border border-gray-200 flex justify-center items-center">
+                 <MobileWireframe headerTitle="Alex (Former Colleague)">
+                    <div className="bg-[#E1F5E8] border border-[#25D366]/30 p-3 rounded-lg self-center w-[90%] shadow-sm mb-4">
+                      <div className="flex items-center gap-2 mb-2">
+                        <span className="text-[#075E54]"><Lightbulb size={16}/></span>
+                        <span className="text-[#075E54] text-xs font-bold">Networking Nudge</span>
+                      </div>
+                      <div className="text-sm text-[#075E54] mb-2">
+                        Alex just posted on Threads about launching a new AI SaaS product. Would you like to reach out?
+                      </div>
+                      <div className="flex gap-2">
+                        <button className="flex-1 bg-white border border-gray-300 text-gray-600 text-xs py-1.5 rounded font-bold">Dismiss</button>
+                        <button className="flex-1 bg-[#128C7E] text-white text-xs py-1.5 rounded font-bold">Draft Congrats</button>
+                      </div>
+                    </div>
+                 </MobileWireframe>
+              </div>
+
+            </div>
+          </div>
+        );
+
+        const EcosystemTab = () => (
+          <div className="space-y-6 animate-in fade-in duration-500">
+            <div className="bg-white p-6 rounded-2xl shadow-sm">
+               <h2 className="text-xl font-bold text-gray-800 border-b pb-2 mb-6">The B2B Advertising Disruption (ROI)</h2>
+               <p className="text-gray-600 mb-8 max-w-3xl">
+                  The ultimate commercial value of WhatsApp’s transformation is the data bridge it builds for Meta. 
+                  By incentivizing users to create a verified Professional Card, WhatsApp captures pristine, zero-party B2B data. This allows Meta to directly attack LinkedIn's lucrative ad monopoly.
+               </p>
+
+               <div className="flex flex-col md:flex-row items-center gap-8 bg-gray-50 p-8 rounded-xl border border-gray-200">
+                  
+                  {/* WhatsApp Profile Side */}
+                  <div className="w-64 bg-white border border-gray-300 rounded-xl shadow-md overflow-hidden relative">
+                    <div className="bg-gray-100 p-4 flex flex-col items-center border-b">
+                      <div className="w-16 h-16 bg-[#128C7E] rounded-full mb-2 border-4 border-white shadow-sm"></div>
+                      <div className="font-bold text-gray-800">You</div>
+                    </div>
+                    <div className="p-4 space-y-3 relative z-10">
+                      <div className="text-xs font-bold text-gray-500 uppercase tracking-wide">Work Card (Opted-in)</div>
+                      <div>
+                        <div className="text-xs text-gray-500">Title</div>
+                        <div className="text-sm font-medium">VP of Logistics</div>
+                      </div>
+                      <div>
+                        <div className="text-xs text-gray-500">Industry</div>
+                        <div className="text-sm font-medium">Supply Chain</div>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Flow Arrow */}
+                  <div className="flex flex-col items-center">
+                    <div className="text-xs font-bold text-gray-400 mb-1 uppercase">Targeting Sync</div>
+                    <div className="h-0.5 w-16 bg-gray-300 relative">
+                       <div className="absolute right-0 -top-1 w-2 h-2 border-t-2 border-r-2 border-gray-300 transform rotate-45"></div>
+                    </div>
+                  </div>
+
+                  {/* Instagram Feed Side */}
+                  <div className="w-64 bg-white border border-gray-300 rounded-xl shadow-md overflow-hidden flex flex-col h-80">
+                     <div className="p-3 flex items-center gap-2 border-b shrink-0">
+                       <div className="w-6 h-6 bg-gradient-to-tr from-yellow-400 to-purple-500 rounded-full"></div>
+                       <div className="text-xs font-bold">Instagram</div>
+                     </div>
+                     <div className="p-3 pb-1 flex items-center justify-between shrink-0">
+                       <div className="flex items-center gap-2">
+                         <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center text-white font-bold text-xs">AI</div>
+                         <div className="text-xs">
+                           <span className="font-bold block">LogisTech SaaS</span>
+                           <span className="text-[10px] text-gray-500">Sponsored</span>
+                         </div>
+                       </div>
+                       <MoreVertical size={16} className="text-gray-400"/>
+                     </div>
+                     <div className="bg-gray-100 flex-1 flex items-center justify-center px-4 text-center">
+                        <div className="text-gray-800 font-bold text-sm">Enterprise Supply Chain Software</div>
+                     </div>
+                     <div className="p-3 text-xs bg-gray-50 border-t shrink-0">
+                        <span className="font-bold">LogisTech</span> Scale your logistics operations with our new API.
+                     </div>
+                  </div>
+
+               </div>
+
+               <div className="mt-8 grid md:grid-cols-2 gap-6">
+                 <InfoBlock 
+                    type="insight"
+                    title="SaaS Disruption" 
+                    icon={<TrendingUp />} 
+                    content="SaaS companies currently pay massive CPLs on LinkedIn to target specific job titles. The Work Card lets Meta serve B2B ads to a 'VP of Logistics' while they are scrolling Instagram Reels, utilizing Meta's superior ad algorithm." 
+                  />
+                  <InfoBlock 
+                    type="insight"
+                    title="Real Estate Funnels" 
+                    icon={<Layers />} 
+                    content="High-end real estate relies on wealth proxies. If a user tags their Work Card as 'Partner' or 'Founder', Meta instantly identifies them as a high-net-worth prospect for premium real estate ads on Facebook." 
+                  />
+               </div>
+
+            </div>
+          </div>
+        );
+
+        const root = createRoot(document.getElementById('root'));
+        root.render(<WAPitch />);
     </script>
 </body>
 </html>
